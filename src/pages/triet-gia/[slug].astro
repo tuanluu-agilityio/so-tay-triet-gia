@@ -1,0 +1,111 @@
+---
+import Base from '../../layouts/Base.astro';
+import '../../styles/detail.css';
+import { loadPhilosophers, renderDetail, ERAS, WHERE, miniSvg, span, initial } from '../../lib/philosophers.mjs';
+
+// Mỗi triết gia là một trang tĩnh riêng, có tiêu đề và mô tả để tìm kiếm được
+export function getStaticPaths() {
+  const PH = loadPhilosophers();
+  return PH.map((p, i) => ({ params: { slug: p.id }, props: { p, prev: PH[i - 1], next: PH[i + 1], PH } }));
+}
+
+const { p, prev, next, PH } = Astro.props;
+const d = renderDetail(p, PH, prev, next);
+const articleHtml = `${d.article}<nav class="pager" aria-label="Triết gia trước và sau">${d.pager}</nav>`;
+---
+<Base title={`${p.name} · Sổ Tay Triết Gia`} description={p.lede}>
+  <div class="wrap">
+    <a class="back" href="/"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>Về cây triết học</a>
+
+    <header class="head">
+      <div class="fruit">
+        <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="96" pathLength="1" /><circle cx="100" cy="100" r="90" pathLength="1" /></svg>
+        <span class="pic">
+          <img id="portrait" data-wiki={p.wiki} alt={`Chân dung ${p.name}`} />
+          <span class="mono" aria-hidden="true">{initial(p.name)}</span>
+        </span>
+      </div>
+      <div>
+        <div class="eyebrow">{ERAS[p.era]}</div>
+        <h1>{p.name}</h1>
+        <div class="years">{span(p)}{p.place ? ` · ${p.place}` : ''}</div>
+        <p class="lede">{p.lede}</p>
+      </div>
+      <figure class="where" aria-label={`Vị trí trên cây: ${WHERE[p.era]}`}>
+        <svg viewBox="0 0 120 150" aria-hidden="true" set:html={miniSvg(p.era)} />
+        <figcaption>{WHERE[p.era]}</figcaption>
+      </figure>
+    </header>
+
+    <div class="body">
+      <nav class="toc" aria-label="Mục lục">
+        <ol>
+          <li><a href="#cuoc-doi">Cuộc đời ngắn gọn</a></li>
+          <li><a href="#tu-tuong">Tư tưởng chính</a></li>
+          <li><a href="#cau-noi">Câu nói nổi tiếng</a></li>
+          <li><a href="#anh-huong">Ảnh hưởng ngày nay</a></li>
+          <li><a href="#lien-quan">Liên quan</a></li>
+          <li><a href="#nguon">Nguồn tham khảo</a></li>
+        </ol>
+      </nav>
+      <article set:html={articleHtml} />
+    </div>
+  </div>
+</Base>
+
+<script is:inline>
+(() => {
+  // Ảnh chân dung: ảnh đại diện có giấy phép tự do của bài Wikipedia, lưu lại trong trình duyệt để lần sau tải nhanh hơn
+  const CACHE = "stgt-portraits-v1";
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(CACHE) || "{}") || {}; } catch (e) {}
+  const map = {};
+  document.querySelectorAll("img[data-wiki]").forEach((im) => {
+    im.addEventListener("load", () => im.classList.add("loaded"));
+    const t = im.dataset.wiki;
+    if (cache[t]) im.src = cache[t];
+    else (map[t] = map[t] || []).push(im);
+  });
+  const titles = Object.keys(map);
+  if (titles.length) {
+    (async () => {
+      try {
+        const url = "https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&redirects=1" +
+          "&prop=pageimages&piprop=thumbnail&pithumbsize=480&pilicense=free&titles=" + encodeURIComponent(titles.join("|"));
+        const data = await (await fetch(url)).json();
+        const back = {};
+        (data.query.normalized || []).forEach((n) => (back[n.to] = n.from));
+        (data.query.redirects || []).forEach((r) => (back[r.to] = back[r.from] || r.from));
+        data.query.pages.forEach((pg) => {
+          const k = back[pg.title] || pg.title;
+          if (!pg.thumbnail || !map[k]) return;
+          map[k].forEach((im) => (im.src = pg.thumbnail.source));
+          cache[k] = pg.thumbnail.source;
+        });
+        try { localStorage.setItem(CACHE, JSON.stringify(cache)); } catch (e) {}
+      } catch (e) { /* giữ chữ cái */ }
+    })();
+  }
+
+  // Mục lục: đánh dấu mục đang đọc
+  const links = [...document.querySelectorAll("nav.toc a")];
+  const secs = links.map((a) => document.querySelector(a.getAttribute("href")));
+  const mark = () => {
+    let cur = secs[0];
+    for (const s of secs) if (s && s.getBoundingClientRect().top < innerHeight * 0.35) cur = s;
+    links.forEach((a, i) => a.classList.toggle("on", secs[i] === cur));
+  };
+  addEventListener("scroll", mark, { passive: true });
+  mark();
+
+  // Hiện dần các mục nằm dưới màn hình đầu tiên
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.remove("pre"); io.unobserve(e.target); }
+    }), { rootMargin: "0px 0px -10% 0px" });
+    document.querySelectorAll(".reveal").forEach((el) => {
+      if (el.getBoundingClientRect().top > innerHeight) { el.classList.add("pre"); io.observe(el); }
+    });
+  }
+})();
+</script>
