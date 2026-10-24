@@ -1,8 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
+import { trackFor } from '../lib/music.mjs';
 import '../styles/home.css';
 ---
-<Base title="Sổ Tay Triết Gia" description="Cây triết học từ Thales đến Foucault: 50 triết gia phương Tây, mỗi người một trang chi tiết dễ hiểu.">
+<Base title="Sổ Tay Triết Gia" description="Cây triết học từ Thales đến Foucault: 50 triết gia phương Tây, mỗi người một trang chi tiết dễ hiểu." track={trackFor()}>
 <div class="home">
 <header class="hero">
   <div class="eyebrow">Cây triết học</div>

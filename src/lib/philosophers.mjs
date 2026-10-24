@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { musicCredit } from './music.mjs';
 
 // Astro chạy file này từ thư mục build nên đường dẫn tính từ thư mục dự án (nơi chạy lệnh build)
 const DATA_DIR = path.resolve(process.cwd(), 'src/data');
@@ -62,7 +63,7 @@ function sourcesHtml(p) {
 }
 
 // Phần thân trang chi tiết: các mục nội dung, liên quan, nguồn và nút trước/sau
-export function renderDetail(p, PH, prev, next) {
+export function renderDetail(p, PH, prev, next, track) {
   const BY = Object.fromEntries(PH.map((q) => [q.id, q]));
   const kin = (p.kin || [])
     .map(([rel, who, note]) => {
@@ -84,7 +85,8 @@ export function renderDetail(p, PH, prev, next) {
     <section id="anh-huong" class="reveal"><h2>Ảnh hưởng ngày nay</h2>${p.influence.map((t) => `<p>${md(t)}</p>`).join('')}</section>
     <section id="lien-quan" class="reveal"><h2>Liên quan</h2><div class="kin">${kin}</div></section>
     <section id="nguon" class="sources reveal"><h2>Nguồn tham khảo</h2>${sourcesHtml(p)}
-      <p class="note">Ảnh chân dung: Wikimedia Commons, giấy phép tự do. Nội dung được viết lại bằng lời văn dễ hiểu, không chép nguyên văn.</p></section>`;
+      <p class="note">Ảnh chân dung: Wikimedia Commons, giấy phép tự do. Nội dung được viết lại bằng lời văn dễ hiểu, không chép nguyên văn.</p>
+      <p class="note">${musicCredit(track)}</p></section>`;
 
   const pager = `
       ${prev ? `<a class="prev" href="/triet-gia/${prev.id}/"><small>← Người trước</small><b>${esc(prev.name)}</b></a>` : ''}
