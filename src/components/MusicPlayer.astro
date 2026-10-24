@@ -1,0 +1,123 @@
+---
+const { track } = Astro.props;
+---
+<audio id="bgm" src={track.file} preload="none" loop data-key={track.key}></audio>
+<button type="button" class="music" id="music-btn" aria-pressed="false" aria-label="Bật nhạc nền">
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3v11.3A3.5 3.5 0 1 0 11 17.5V7.8l8-1.6v5.6A3.5 3.5 0 1 0 21 15V3z" /></svg>
+  <span class="music-name">{track.title}</span>
+</button>
+
+<style is:global>
+  .music {
+    position: fixed; z-index: 50;
+    right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-width: 44px; min-height: 44px; padding: 0 12px;
+    border: 1px solid var(--rule, #d6d8cb); border-radius: 999px;
+    background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+    font: 500 13px/1 var(--f-body); cursor: pointer;
+  }
+  .music svg { width: 20px; height: 20px; flex: none; }
+  .music[aria-pressed="true"] svg { color: var(--gold); animation: music-pulse 2.4s ease-in-out infinite; }
+  .music:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .music.err { opacity: .5; }
+  .music-name { display: none; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (min-width: 720px) {
+    .music:hover .music-name, .music:focus-visible .music-name { display: inline; }
+  }
+  @keyframes music-pulse { 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) {
+    .music[aria-pressed="true"] svg { animation: none; }
+  }
+</style>
+
+<script>
+  import { readPref, writePref, readPos, writePos } from '../lib/player-state.mjs';
+
+  const MAX_VOL = 0.3, FADE_IN = 1500, FADE_OUT = 600;
+  const audio = document.getElementById('bgm') as HTMLAudioElement;
+  const btn = document.getElementById('music-btn') as HTMLButtonElement;
+  const key = audio.dataset.key as string;
+
+  // Chỉ đọc thuộc tính cũng có thể ném lỗi ở vài trình duyệt, nên bọc lại
+  const store = (name: 'localStorage' | 'sessionStorage'): Storage | null => {
+    try { return window[name]; } catch { return null; }
+  };
+
+  let on = false, raf = 0, waiting = false;
+
+  const ui = (v: boolean) => {
+    on = v;
+    btn.setAttribute('aria-pressed', String(v));
+    btn.setAttribute('aria-label', v ? 'Tắt nhạc nền' : 'Bật nhạc nền');
+  };
+
+  const fade = (to: number, ms: number, done?: () => void) => {
+    cancelAnimationFrame(raf);
+    const from = audio.volume, t0 = performance.now();
+    const step = (now: number) => {
+      const k = Math.min(1, (now - t0) / ms);
+      audio.volume = from + (to - from) * k;
+      if (k < 1) raf = requestAnimationFrame(step); else done?.();
+    };
+    raf = requestAnimationFrame(step);
+  };
+
+  const failed = () => {
+    cancelAnimationFrame(raf);
+    btn.classList.add('err');
+    btn.title = 'Không tải được nhạc';
+    ui(false);
+  };
+
+  // Trình duyệt có thể chặn play() khi vừa tải trang: chờ lần chạm/bấm phím đầu tiên rồi phát lại
+  const retryOnGesture = () => {
+    if (waiting) return;
+    waiting = true;
+    const go = () => {
+      waiting = false;
+      document.removeEventListener('pointerdown', go);
+      document.removeEventListener('keydown', go);
+      if (on && audio.paused) start();
+    };
+    document.addEventListener('pointerdown', go, { once: true });
+    document.addEventListener('keydown', go, { once: true });
+  };
+
+  function start() {
+    audio.volume = 0;
+    audio.play().then(
+      () => fade(MAX_VOL, FADE_IN),
+      (e) => { if (e?.name === 'NotAllowedError') retryOnGesture(); else if (e?.name !== 'AbortError') failed(); },
+    );
+  }
+
+  audio.addEventListener('error', failed);
+
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('err')) return;
+    if (on) {
+      ui(false);
+      writePref(store('localStorage'), false);
+      fade(0, FADE_OUT, () => { if (!on) audio.pause(); });
+    } else {
+      ui(true);
+      writePref(store('localStorage'), true);
+      start();
+    }
+  });
+
+  // Cùng bản nhạc thì nghe tiếp ở chỗ đang dở, khác bản thì từ đầu
+  audio.addEventListener('loadedmetadata', () => {
+    const t = readPos(store('sessionStorage'), key);
+    if (t > 0) try { audio.currentTime = t; } catch { /* đặt không được thì phát từ đầu */ }
+  }, { once: true });
+
+  if (readPref(store('localStorage'))) {
+    ui(true);
+    start();
+  }
+
+  // Chưa phát gì (currentTime = 0) thì giữ nguyên vị trí đã lưu
+  addEventListener('pagehide', () => { if (audio.currentTime > 0) writePos(store('sessionStorage'), key, audio.currentTime); });
+</script>

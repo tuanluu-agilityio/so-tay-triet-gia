@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import '../../styles/detail.css';
+import { trackFor } from '../../lib/music.mjs';
 import { loadPhilosophers, renderDetail, ERAS, WHERE, miniSvg, span, initial } from '../../lib/philosophers.mjs';
 
 // Mỗi triết gia là một trang tĩnh riêng, có tiêu đề và mô tả để tìm kiếm được
@@ -10,10 +11,11 @@ export function getStaticPaths() {
 }
 
 const { p, prev, next, PH } = Astro.props;
-const d = renderDetail(p, PH, prev, next);
+const track = trackFor(p.id);
+const d = renderDetail(p, PH, prev, next, track);
 const articleHtml = `${d.article}<nav class="pager" aria-label="Triết gia trước và sau">${d.pager}</nav>`;
 ---
-<Base title={`${p.name} · Sổ Tay Triết Gia`} description={p.lede}>
+<Base title={`${p.name} · Sổ Tay Triết Gia`} description={p.lede} track={track}>
   <div class="wrap">
     <a class="back" href="/"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>Về cây triết học</a>
 
