@@ -7,6 +7,7 @@ Trang web Astro: cây triết học (trang chủ) và 50 trang chi tiết tĩnh,
 npm install
 npm run dev       # xem thử tại http://localhost:4321
 npm run build     # tạo thư mục dist/ (trang tĩnh)
+npm test          # chạy test (node --test)
 ```
 
 ## Cấu trúc
@@ -14,7 +15,9 @@ npm run build     # tạo thư mục dist/ (trang tĩnh)
 - `src/pages/triet-gia/[slug].astro`: khuôn trang chi tiết, tạo 50 trang khi build
 - `src/data/*.js`: nội dung, mỗi file một thời kỳ (dùng `PH.push({...})`)
 - `src/lib/philosophers.mjs`: đọc dữ liệu và dựng phần nội dung trang
+- `src/lib/music.mjs`, `src/lib/player-state.mjs`, `src/components/MusicPlayer.astro`: nhạc nền
 - `src/styles/`: CSS của trang chủ và trang chi tiết
+- `tests/`: test cho bảng nhạc và trạng thái nút nhạc
 
 Ảnh chân dung tải từ Wikimedia Commons (giấy phép tự do) khi trang mở; cần có mạng.
 Nội dung do Claude viết, cần chủ dự án duyệt trước khi xuất bản.
