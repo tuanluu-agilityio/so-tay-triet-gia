@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadPhilosophers } from '../src/lib/philosophers.mjs';
@@ -30,11 +32,27 @@ test('vài cặp đúng trường phái', () => {
   assert.equal(trackFor('aquinas').key, 'binh-ca');
   assert.equal(trackFor('camus').key, 'paris');
   assert.equal(trackFor('hegel').key, 'lang-man-duc');
-  assert.equal(trackFor('marcus-aurelius').key, 'la-ma');
+  assert.equal(trackFor('marcus-aurelius').key, 'hy-lap-co');
 });
 
 test('ghi công được escape', () => {
   const h = musicCredit({ ...TRACKS['paris'], performer: 'A <b>', license: 'CC0', source: 'https://x' });
   assert.ok(h.includes('A &lt;b&gt;'));
   assert.ok(h.includes('href="https://x"'));
+});
+
+test('file nhạc có thật và đủ nhỏ', () => {
+  for (const [key, t] of Object.entries(TRACKS)) {
+    assert.equal(t.file, `/audio/${key}.mp3`);
+    const size = fs.statSync(path.join('public', t.file)).size;
+    assert.ok(size > 100000 && size <= 5 * 1024 * 1024, `${key}: ${size}`);
+  }
+});
+
+test('giấy phép hợp lệ', () => {
+  for (const [key, t] of Object.entries(TRACKS)) {
+    assert.match(t.license, /^(Public Domain|CC0|CC BY( \d\.\d)?|CC BY-SA( \d\.\d)?)$/, key);
+    assert.notEqual(t.performer, '', key);
+    assert.ok(t.source.startsWith('https://'), key);
+  }
 });
