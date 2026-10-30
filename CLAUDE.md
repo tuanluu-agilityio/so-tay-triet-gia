@@ -28,7 +28,7 @@ Máy phát triển chạy Windows: PowerShell 5.1 không có `&&`, còn cmd khô
 
 **Dữ liệu triết gia** (`src/data/*.js`): mỗi file là một thời kỳ, viết dạng `PH.push({...}, {...})`, không phải ES module. `loadPhilosophers()` trong `src/lib/philosophers.mjs` đọc *mọi* file `.js` trong thư mục này theo tên đã sắp xếp và chạy bằng `new Function('PH', ...)`. Vì vậy **không đặt file `.js` nào khác vào `src/data/`**, và tiền tố số (`1-` … `8-`) quyết định thứ tự thời gian, cũng là thứ tự nút "Người trước/Người sau".
 
-Mỗi bản ghi có: `id` (slug), `name`, `en`, `wiki` (tựa bài Wikipedia tiếng Anh, dùng để lấy ảnh), `sep` (slug Stanford Encyclopedia hoặc `null`), `era` (0–7, chỉ số vào `ERAS`/`WHERE`), `born`/`died` (năm âm là TCN), `approx`, `place`, `lede`, `life[]`, `facts[[k, v]]`, `ideas[[tiêu đề, nội dung, ví dụ đời thường]]`, `quotes[[câu, nguồn]]`, `influence[]`, `kin[[quan hệ, id, ghi chú]]`, `works[]`. Chuỗi được phép dùng `*nghiêng*`; mọi thứ khác bị escape.
+Mỗi bản ghi có: `id` (slug), `name`, `en`, `wiki` (tựa bài Wikipedia tiếng Anh, dùng để lấy ảnh), `sep` (slug Stanford Encyclopedia hoặc `null`), `era` (0–7, chỉ số vào `ERAS`/`WHERE`), `born`/`died` (năm âm là TCN), `approx`, `place`, `lede`, `life[]`, `facts[[k, v]]`, `ideas[[tiêu đề, nội dung, ví dụ đời thường]]`, `quotes[[câu, nguồn]]` (đúng 5 câu; quy tắc định dạng nằm trong tests/quotes.test.mjs), `influence[]`, `kin[[quan hệ, id, ghi chú]]`, `works[]`. Chuỗi được phép dùng `*nghiêng*`; mọi thứ khác bị escape.
 
 **Trang chi tiết** (`src/pages/triet-gia/[slug].astro`): `getStaticPaths` dựng một trang cho mỗi bản ghi. Phần thân bài là chuỗi HTML do `renderDetail()` trong `philosophers.mjs` dựng rồi chèn bằng `set:html`. Muốn sửa các mục nội dung thì sửa ở đó, không phải trong file `.astro`.
 
