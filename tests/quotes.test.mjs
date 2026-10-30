@@ -49,7 +49,11 @@ const MISATTRIBUTED = [
   ['machiavelli', /mục đích biện minh/i],
 ];
 test('định dạng: câu hay bị gán nhầm phải ghi rõ', () => {
-  for (const [id, re] of MISATTRIBUTED) for (const [q, src] of PH.find((p) => p.id === id).quotes) {
-    if (re.test(q)) assert.match(src, /gán|đời sau|không có nguyên văn/i, `${id}: ${q}`);
+  for (const [id, re] of MISATTRIBUTED) {
+    const p = PH.find((p) => p.id === id);
+    assert.ok(p, `thiếu ${id}`);
+    for (const [q, src] of p.quotes) {
+      if (re.test(q)) assert.match(src, /gán|đời sau|không có nguyên văn/i, `${id}: ${q}`);
+    }
   }
 });
